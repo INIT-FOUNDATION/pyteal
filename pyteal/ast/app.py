@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 from enum import Enum
 
 from ..types import TealType, require_type
@@ -8,6 +8,7 @@ from .expr import Expr
 from .maybe import MaybeValue
 from .int import EnumInt
 from .global_ import Global
+from .get_teal_type import get_teal_type
 
 if TYPE_CHECKING:
     from ..compiler import CompileOptions
@@ -84,7 +85,9 @@ class App(LeafExpr):
         return Global.current_application_id()
 
     @classmethod
-    def optedIn(cls, account: Expr, app: Expr) -> "App":
+    def optedIn(
+        cls, account: Union[int, str, Expr], app: Union[int, str, Expr]
+    ) -> "App":
         """Check if an account has opted in for an application.
 
         Args:
@@ -95,12 +98,14 @@ class App(LeafExpr):
                 must be evaluated to uint64 (or, since v4, an application id that appears in
                 Txn.ForeignApps or is the CurrentApplicationID, must be evaluated to int).
         """
+        account, app = map(get_teal_type, [account, app])
+
         require_type(account, TealType.anytype)
         require_type(app, TealType.uint64)
         return cls(AppField.optedIn, [account, app])
 
     @classmethod
-    def localGet(cls, account: Expr, key: Expr) -> "App":
+    def localGet(cls, account: Union[int, str, Expr], key: Union[str, Expr]) -> "App":
         """Read from an account's local state for the current application.
 
         Args:
@@ -109,12 +114,19 @@ class App(LeafExpr):
                 Txn.Accounts or is Txn.Sender, must be evaluated to bytes).
             key: The key to read from the account's local state. Must evaluate to bytes.
         """
+        account, key = map(get_teal_type, [account, key])
+
         require_type(account, TealType.anytype)
         require_type(key, TealType.bytes)
         return cls(AppField.localGet, [account, key])
 
     @classmethod
-    def localGetEx(cls, account: Expr, app: Expr, key: Expr) -> MaybeValue:
+    def localGetEx(
+        cls,
+        account: Union[int, str, Expr],
+        app: Union[int, str, Expr],
+        key: Union[str, Expr],
+    ) -> MaybeValue:
         """Read from an account's local state for an application.
 
         Args:
@@ -126,6 +138,8 @@ class App(LeafExpr):
                 Txn.ForeignApps or is the CurrentApplicationID, must be evaluated to int).
             key: The key to read from the account's local state. Must evaluate to bytes.
         """
+        account, app, key = map(get_teal_type, [account, app, key])
+
         require_type(account, TealType.anytype)
         require_type(app, TealType.uint64)
         require_type(key, TealType.bytes)
@@ -134,17 +148,19 @@ class App(LeafExpr):
         )
 
     @classmethod
-    def globalGet(cls, key: Expr) -> "App":
+    def globalGet(cls, key: Union[str, Expr]) -> "App":
         """Read from the global state of the current application.
 
         Args:
             key: The key to read from the global application state. Must evaluate to bytes.
         """
+        key = get_teal_type(key)
+
         require_type(key, TealType.bytes)
         return cls(AppField.globalGet, [key])
 
     @classmethod
-    def globalGetEx(cls, app: Expr, key: Expr) -> MaybeValue:
+    def globalGetEx(cls, app: Union[str, Expr], key: Union[str, Expr]) -> MaybeValue:
         """Read from the global state of an application.
 
         Args:
@@ -153,6 +169,8 @@ class App(LeafExpr):
                 Txn.ForeignApps or is the CurrentApplicationID, must be evaluated to uint64).
             key: The key to read from the global application state. Must evaluate to bytes.
         """
+        app, key = map(get_teal_type, [app, key])
+
         require_type(app, TealType.uint64)
         require_type(key, TealType.bytes)
         return MaybeValue(
@@ -160,7 +178,12 @@ class App(LeafExpr):
         )
 
     @classmethod
-    def localPut(cls, account: Expr, key: Expr, value: Expr) -> "App":
+    def localPut(
+        cls,
+        account: Union[int, str, Expr],
+        key: Union[str, Expr],
+        value: Union[int, str, Expr],
+    ) -> "App":
         """Write to an account's local state for the current application.
 
         Args:
@@ -170,25 +193,29 @@ class App(LeafExpr):
             key: The key to write in the account's local state. Must evaluate to bytes.
             value: The value to write in the account's local state. Can evaluate to any type.
         """
+        account, value, key = map(get_teal_type, [account, value, key])
+
         require_type(account, TealType.anytype)
         require_type(key, TealType.bytes)
         require_type(value, TealType.anytype)
         return cls(AppField.localPut, [account, key, value])
 
     @classmethod
-    def globalPut(cls, key: Expr, value: Expr) -> "App":
+    def globalPut(cls, key: Union[str, Expr], value: Union[int, str, Expr]) -> "App":
         """Write to the global state of the current application.
 
         Args:
             key: The key to write in the global application state. Must evaluate to bytes.
             value: THe value to write in the global application state. Can evaluate to any type.
         """
+        value, key = map(get_teal_type, [value, key])
+
         require_type(key, TealType.bytes)
         require_type(value, TealType.anytype)
         return cls(AppField.globalPut, [key, value])
 
     @classmethod
-    def localDel(cls, account: Expr, key: Expr) -> "App":
+    def localDel(cls, account: Union[int, str, Expr], key: Union[str, Expr]) -> "App":
         """Delete a key from an account's local state for the current application.
 
         Args:
@@ -197,17 +224,21 @@ class App(LeafExpr):
                 Txn.Accounts or is Txn.Sender, must be evaluated to bytes).
             key: The key to delete from the account's local state. Must evaluate to bytes.
         """
+        account, key = map(get_teal_type, [account, key])
+
         require_type(account, TealType.anytype)
         require_type(key, TealType.bytes)
         return cls(AppField.localDel, [account, key])
 
     @classmethod
-    def globalDel(cls, key: Expr) -> "App":
+    def globalDel(cls, key: Union[str, Expr]) -> "App":
         """Delete a key from the global state of the current application.
 
         Args:
             key: The key to delete from the global application state. Must evaluate to bytes.
         """
+        key = get_teal_type(key)
+
         require_type(key, TealType.bytes)
         return cls(AppField.globalDel, [key])
 
@@ -217,13 +248,15 @@ App.__module__ = "pyteal"
 
 class AppParam:
     @classmethod
-    def approvalProgram(cls, app: Expr) -> MaybeValue:
+    def approvalProgram(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the bytecode of Approval Program for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get,
@@ -233,13 +266,15 @@ class AppParam:
         )
 
     @classmethod
-    def clearStateProgram(cls, app: Expr) -> MaybeValue:
+    def clearStateProgram(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the bytecode of Clear State Program for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get,
@@ -249,13 +284,15 @@ class AppParam:
         )
 
     @classmethod
-    def globalNumUnit(cls, app: Expr) -> MaybeValue:
+    def globalNumUnit(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the number of uint64 values allowed in Global State for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get,
@@ -265,13 +302,15 @@ class AppParam:
         )
 
     @classmethod
-    def globalNumByteSlice(cls, app: Expr) -> MaybeValue:
+    def globalNumByteSlice(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the number of byte array values allowed in Global State for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get,
@@ -281,13 +320,15 @@ class AppParam:
         )
 
     @classmethod
-    def localNumUnit(cls, app: Expr) -> MaybeValue:
+    def localNumUnit(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the number of uint64 values allowed in Local State for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get,
@@ -297,13 +338,15 @@ class AppParam:
         )
 
     @classmethod
-    def localNumByteSlice(cls, app: Expr) -> MaybeValue:
+    def localNumByteSlice(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the number of byte array values allowed in Local State for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get,
@@ -313,13 +356,15 @@ class AppParam:
         )
 
     @classmethod
-    def extraProgramPages(cls, app: Expr) -> MaybeValue:
+    def extraProgramPages(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the number of Extra Program Pages of code space for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get,
@@ -329,26 +374,30 @@ class AppParam:
         )
 
     @classmethod
-    def creator(cls, app: Expr) -> MaybeValue:
+    def creator(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the creator address for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get, TealType.bytes, immediate_args=["AppCreator"], args=[app]
         )
 
     @classmethod
-    def address(cls, app: Expr) -> MaybeValue:
+    def address(cls, app: Union[int, Expr]) -> MaybeValue:
         """Get the escrow address for the application.
 
         Args:
             app: An index into Txn.ForeignApps that correspond to the application to check.
                 Must evaluate to uint64.
         """
+        app = get_teal_type(app)
+
         require_type(app, TealType.uint64)
         return MaybeValue(
             Op.app_params_get, TealType.bytes, immediate_args=["AppAddress"], args=[app]
