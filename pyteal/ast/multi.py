@@ -1,4 +1,4 @@
-from typing import Callable, List, Union, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 from pyteal.types import TealType
 from pyteal.ir import TealOp, Op, TealBlock
@@ -17,10 +17,10 @@ class MultiValue(LeafExpr):
     def __init__(
         self,
         op: Op,
-        types: List[TealType],
+        types: list[TealType],
         *,
-        immediate_args: List[Union[int, str]] | None = None,
-        args: List[Expr] | None = None,
+        immediate_args: list[int | str] | None = None,
+        args: list[Expr] | None = None,
         compile_check: Callable[["CompileOptions"], None] = lambda _: None,
     ):
         """Create a new MultiValue.
@@ -45,7 +45,7 @@ class MultiValue(LeafExpr):
         return Seq(self, reducer(*input))
 
     def __str__(self):
-        ret_str = "(({}".format(self.op)
+        ret_str = f"(({self.op}"
         for a in self.immediate_args:
             ret_str += " " + a.__str__()
 
