@@ -129,7 +129,7 @@ def verifyOpsForMode(teal: List[TealComponent], mode: Mode):
 def compileSubroutine(
     ast: Expr,
     options: CompileOptions,
-    subroutineGraph: Dict[SubroutineDefinition, Set[SubroutineDefinition]],
+    subroutine_graph: Dict[Optional[SubroutineDefinition], Set[SubroutineDefinition]],
     subroutine_start_blocks: Dict[Optional[SubroutineDefinition], TealBlock],
     subroutine_end_blocks: Dict[Optional[SubroutineDefinition], TealBlock],
 ) -> None:
@@ -214,15 +214,14 @@ def compileSubroutine(
             for subroutine in stmt.getSubroutines():
                 referencedSubroutines.add(subroutine)
 
-    if currentSubroutine is not None:
-        subroutineGraph[currentSubroutine] = referencedSubroutines
+    subroutine_graph[currentSubroutine] = referencedSubroutines
 
     newSubroutines = referencedSubroutines - subroutine_start_blocks.keys()
     for subroutine in sorted(newSubroutines, key=lambda subroutine: subroutine.id):
         compileSubroutine(
             subroutine.get_declaration_by_option(options.use_frame_pointers),
             options,
-            subroutineGraph,
+            subroutine_graph,
             subroutine_start_blocks,
             subroutine_end_blocks,
         )
@@ -284,11 +283,13 @@ def compileTeal(
 
     options = CompileOptions(mode=mode, version=version, optimize=optimize)
 
-    subroutineGraph: Dict[SubroutineDefinition, Set[SubroutineDefinition]] = dict()
+    subroutine_graph: Dict[
+        Optional[SubroutineDefinition], Set[SubroutineDefinition]
+    ] = dict()
     subroutine_start_blocks: Dict[Optional[SubroutineDefinition], TealBlock] = dict()
     subroutine_end_blocks: Dict[Optional[SubroutineDefinition], TealBlock] = dict()
     compileSubroutine(
-        ast, options, subroutineGraph, subroutine_start_blocks, subroutine_end_blocks
+        ast, options, subroutine_graph, subroutine_start_blocks, subroutine_end_blocks
     )
 
     # note: optimizations are off by default, in which case, apply_global_optimizations
@@ -303,14 +304,16 @@ def compileTeal(
         for start in subroutine_start_blocks.values():
             apply_global_optimizations(start, options.optimize, version)
 
-    localSlotAssignments = assignScratchSlotsToSubroutines(subroutine_start_blocks)
+    localSlotAssignments = assignScratchSlotsToSubroutines(
+        subroutine_start_blocks, subroutine_graph
+    )
 
     subroutineMapping: Dict[
         Optional[SubroutineDefinition], List[TealComponent]
     ] = sort_subroutine_blocks(subroutine_start_blocks, subroutine_end_blocks)
 
     spillLocalSlotsDuringRecursion(
-        version, subroutineMapping, subroutineGraph, localSlotAssignments
+        version, subroutineMapping, subroutine_graph, localSlotAssignments
     )
 
     subroutineLabels = resolveSubroutines(subroutineMapping)
